@@ -1,13 +1,23 @@
 package com.example.springsecurityhashingandsalting14102022.controller;
 
+import com.example.springsecurityhashingandsalting14102022.ds.RegisterUser;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -16,6 +26,33 @@ public class AccountController {
 
     private static final String CHILD = "child";
     private static final String MAIN = "main";
+    @Autowired
+    private UserDetailsManager userDetailsManager;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @GetMapping("/signup")
+    public String signupForm(Model model) {
+        model.addAttribute("user", new RegisterUser());
+        return "signup";
+    }
+
+    @PostMapping("/signup")
+    public String saveSignup(@ModelAttribute("user") @Valid RegisterUser user, BindingResult result) {
+        if (result.hasErrors()) {
+            return "signup";
+        }
+        userDetailsManager.createUser(
+                new User(
+                        user.getUserName(),
+                        passwordEncoder.encode(user.getPassword()),
+                        Collections.singletonList(
+                                new SimpleGrantedAuthority("USER")
+                        )
+                )
+        );
+        return "redirect:/login";
+    }
 
     @GetMapping("/account")
     public String showAccountStatus(Model model) throws InterruptedException {
